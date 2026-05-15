@@ -51,7 +51,17 @@ static void show_help(const char *prog) {
 "Exit codes:\n"
 "   0  success (zero errors)\n"
 "   1  one or more files failed to compile\n"
-"   2  internal error (out of memory, cannot open file, etc.)\n",
+"   2  internal error (out of memory, cannot open file, etc.)\n"
+"\n"
+"Examples:\n"
+"  lslc greeter.lsl                       # type-check a single script\n"
+"  lslc -c -o build/g.lslbc src/g.lsl     # compile to SLBC for slemu/lsldb\n"
+"  lslc -Wall -Werror src/*.lsl           # strict CI lint\n"
+"  lslc --lso legacy_hud.lsl              # target the legacy LSO VM\n"
+"  lslc -Iinclude -DDEBUG=1 vendor.lsl    # use the preprocessor\n"
+"  lslc --list-builtins-detailed | head   # enumerate the built-in library\n"
+"\n"
+"See lslc(1) for the complete manual.\n",
         prog);
 }
 

@@ -42,9 +42,12 @@ clean:
 install: $(EXE)
 	install -d $(DESTDIR)$(BINDIR)
 	install -m 0755 $(EXE) $(DESTDIR)$(BINDIR)/$(EXE)
+	install -d $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m 0644 man/$(EXE).1 $(DESTDIR)$(PREFIX)/share/man/man1/$(EXE).1
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/$(EXE)
+	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/$(EXE).1
 
 test: $(EXE)
 	@sh tests/run_tests.sh ./$(EXE)

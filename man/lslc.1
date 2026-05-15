@@ -1,0 +1,292 @@
+.TH LSLC 1 "2026-05-15" "Sakura LSL Toolchain 1.0.0" "Sakura LSL Toolchain"
+.\" Manual page for lslc(1) — the Sakura Studios LSL compiler and checker.
+.\" Copyright (c) 2026 Sakura Studios, IKE. Licensed under the MIT License.
+.SH NAME
+lslc \- Linden Scripting Language compiler and static checker (Mono/LSO)
+.SH SYNOPSIS
+.B lslc
+.RI [ options ]
+.IR file.lsl " [" more.lsl " ...]"
+.PP
+.B lslc
+.B \-c
+.RI [ \-o
+.IR out.lslbc ]
+.IR file.lsl
+.PP
+.B lslc
+.B \-\-list\-builtins
+|
+.B \-\-list\-builtins\-detailed
+.SH DESCRIPTION
+.B lslc
+is the Sakura Studios command-line compiler and static analyser for the
+Linden Scripting Language used by Second Life and OpenSimulator.
+.PP
+By default
+.B lslc
+performs the same parsing, type checking and semantic analysis that the
+official viewer-side LSL compiler does, but with substantially richer
+diagnostics (carets, hints, source context, categorisation) and without
+needing a running viewer. It targets either the modern
+.B Mono
+runtime (the default, with a 64 KiB per-script memory budget) or the
+legacy
+.B LSO
+virtual machine (16 KiB budget; rejects Mono-only built-ins such as
+.BR llJson* ,
+.BR llLinksetData* ,
+.BR llCastRay ,
+.BR llChar ,
+.BR llOrd ,
+.BR llHMAC ,
+and
+.BR llTransferLindenDollars ).
+.PP
+With
+.B \-c
+.B lslc
+additionally emits a portable SLBC bytecode file (extension
+.IR .lslbc )
+suitable for execution under
+.BR slemu (1)
+or interactive debugging with
+.BR lsldb (1).
+.PP
+The driver also includes a small
+.BR cpp -style
+preprocessor with
+.BR \-I ,
+.BR \-D
+and
+.B #include
+support, so larger projects can be split into headers and modules without
+losing single-file-script compatibility on upload.
+.SH OPTIONS
+.SS Targeting
+.TP
+.B \-\-mono
+Target the Mono virtual machine (default). The per-script memory budget
+is set to 64 KiB.
+.TP
+.B \-\-lso
+Target the legacy LSO virtual machine. The per-script budget is
+16 KiB and Mono-only built-ins are rejected at compile time.
+.TP
+.BI \-\-memory\-budget= N
+Override the per-script memory budget, in bytes. A value of
+.B 0
+behaves like
+.BR \-\-no\-memory\-check .
+.TP
+.B \-\-no\-memory\-check
+Disable source-size based budget warnings and errors.
+.SS Diagnostics
+.TP
+.BR \-W ", " \-\-wall ", " \-Wall
+Enable extra warnings (unused variables, shadowed parameters,
+suspicious casts, etc.).
+.TP
+.B \-Werror
+Treat all warnings as errors.
+.TP
+.B \-fsyntax\-only
+Only run syntax and type checking. This is the default.
+.TP
+.B \-fno\-color
+Suppress ANSI colour escapes in diagnostics, even when stderr is a TTY.
+.TP
+.BI \-fmax\-errors= N
+Stop emitting after
+.I N
+errors. The default is
+.BR 50 .
+.TP
+.BR \-q ", " \-\-quiet
+Print only a one-line summary per file on errors; suppress source
+carets.
+.SS Preprocessor
+.TP
+.BI \-I " PATH"
+Add
+.I PATH
+to the
+.B #include
+search list. May be repeated.
+.TP
+.BI \-D " NAME" [= value ]
+Pre-define a macro, as with
+.BR cpp (1).
+.TP
+.B \-E
+Run only the preprocessor; write the preprocessed source to standard
+output and exit.
+.TP
+.B \-\-no\-preprocess
+Skip the preprocessor entirely. The source is fed straight to the
+lexer.
+.SS Output
+.TP
+.BR \-c ", " \-\-emit\-bytecode
+Emit SLBC bytecode (.lslbc) consumable by
+.BR slemu (1).
+.TP
+.BR \-o ", " \-\-output " " \fIFILE\fR
+With
+.BR \-c ,
+write the bytecode to
+.IR FILE .
+The default is the input path with the extension replaced by
+.BR .lslbc .
+.TP
+.BI \-\-diag\-output " FILE"
+Redirect all diagnostics to
+.I FILE
+instead of standard error.
+.SS Informational
+.TP
+.B \-\-list\-builtins
+Print every built-in function, constant and event name known to
+.BR lslc ,
+one per line, grouped by category.
+.TP
+.B \-\-list\-builtins\-detailed
+Print a stable JSON-line dump of every built-in function, constant and
+event, including return types, parameter types and parameter names.
+Designed for consumption by IDE tooling such as
+.BR sakura-intellij-lsl .
+.TP
+.B \-\-version
+Print the
+.B lslc
+version and exit.
+.TP
+.BR \-h ", " \-\-help
+Print a usage summary and exit.
+.TP
+.B \-\-
+Stop option parsing; all following arguments are treated as input
+files.
+.SH EXAMPLES
+.PP
+Compile a single script under the default Mono target. On success a
+short
+.B "OK"
+line is printed for each file; on failure
+.B lslc
+exits non-zero and prints categorised diagnostics:
+.PP
+.RS
+.B lslc greeter.lsl
+.RE
+.PP
+Produce SLBC bytecode for
+.BR slemu (1)
+or
+.BR lsldb (1).
+Without
+.BR \-o ,
+the output is written next to the input with the
+.B .lslbc
+extension:
+.PP
+.RS
+.B lslc \-c greeter.lsl
+.br
+.B lslc \-c \-o build/greeter.lslbc src/greeter.lsl
+.RE
+.PP
+Enable all extra warnings and fail the build on any of them \(em
+recommended in CI:
+.PP
+.RS
+.B lslc \-Wall \-Werror src/*.lsl
+.RE
+.PP
+Lint a script against the legacy LSO virtual machine before uploading
+to an OpenSim region that has not enabled Mono. Mono-only built-ins are
+reported as errors, and the memory budget is reduced to 16 KiB:
+.PP
+.RS
+.B lslc \-\-lso \-Wall legacy_hud.lsl
+.RE
+.PP
+Enumerate the built-in library available to scripts \(em useful when
+writing a syntax highlighter or completion provider:
+.PP
+.RS
+.B lslc \-\-list\-builtins\-detailed | head
+.RE
+.PP
+Use the preprocessor to share constants between several scripts.
+Headers are resolved against every
+.B \-I
+directory in the order they were given on the command line:
+.PP
+.RS
+.B lslc \-Iinclude \-DDEBUG=1 \-DOWNER_KEY=\(dq...\(dq vendor.lsl
+.RE
+.SH EXIT STATUS
+.TP
+.B 0
+All input files compiled and type-checked successfully (zero errors).
+Warnings may have been emitted unless
+.B \-Werror
+was given.
+.TP
+.B 1
+At least one input file failed to compile, or bytecode emission failed.
+.TP
+.B 2
+Internal driver error: bad command line, out of memory, unreadable
+input, or an unwriteable
+.B \-o
+target.
+.SH FILES
+.TP
+.IR file .lsl
+LSL source file. May contain preprocessor directives.
+.TP
+.IR file .lslbc
+SLBC bytecode emitted by
+.B lslc \-c
+and consumed by
+.BR slemu (1)
+and
+.BR lsldb (1).
+.TP
+.I ./
+The current directory and every
+.B \-I
+directory are searched for
+.B #include
+headers.
+.SH BUGS
+The memory-budget check is a source-size heuristic (comments and
+whitespace stripped); it tracks the official viewer's
+.RB \(lq "estimated bytecode size" \(rq
+widget closely but is not exact. A script that
+.B lslc
+accepts as within budget may still be rejected at upload time if its
+compiled string table or initialiser data is unusually large.
+.PP
+Please report bugs to
+.MT shiho@sakurastudios.eu
+Shiho Sakura
+.ME .
+.SH SEE ALSO
+.BR slemu (1),
+.BR lsldb (1),
+.BR lsltest (1),
+.BR cpp (1)
+.SH AUTHOR
+Shiho Sakura <shiho@sakurastudios.eu>, on behalf of Sakura Studios, IKE.
+.SH COPYRIGHT
+Copyright \(co 2026 Sakura Studios, IKE.
+.PP
+Released under the MIT License. See the
+.B LICENSE
+file in the source distribution for the full text. This is free
+software: you are free to change and redistribute it. There is
+.B NO WARRANTY
+to the extent permitted by law.

@@ -73,13 +73,21 @@ jobs:
         id: changelog
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
-          # Slurp the lines for this exact section.
           awk -v v="$VERSION" '
             $0 ~ "^## \\[" v "\\]" {flag=1; next}
             flag && /^## \[/ {flag=0}
             flag
           ' CHANGELOG.md > release-body.md
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Stage release binaries with OS-suffixed names
+        run: |
+          mkdir -p release-bins
+          cp artifacts/lslc-ubuntu-latest/lslc       release-bins/lslc-linux-x86_64
+          cp artifacts/lslc-macos-latest/lslc        release-bins/lslc-macos-x86_64
+          cp artifacts/lslc-windows-latest/lslc.exe  release-bins/lslc-windows-x86_64.exe
+          chmod +x release-bins/lslc-linux-x86_64 release-bins/lslc-macos-x86_64
+          ls -la release-bins/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -89,9 +97,9 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            artifacts/lslc-ubuntu-latest/lslc
-            artifacts/lslc-macos-latest/lslc
-            artifacts/lslc-windows-latest/lslc.exe
+            release-bins/lslc-linux-x86_64
+            release-bins/lslc-macos-x86_64
+            release-bins/lslc-windows-x86_64.exe
 
   publish-aur:
     name: Push AUR PKGBUILD

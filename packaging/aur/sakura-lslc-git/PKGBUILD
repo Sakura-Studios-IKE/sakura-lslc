@@ -1,0 +1,33 @@
+# Maintainer: Shiho Sakura <shiho@sakurastudios.eu>
+
+pkgname=sakura-lslc-git
+_pkgname=sakura-lslc
+pkgver=1.0.0.r0.gHEAD
+pkgrel=1
+pkgdesc="LSL (Linden Scripting Language) compiler — part of the Sakura LSL toolchain (git)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/Sakura-Studios-IKE/sakura-lslc"
+license=('MIT')
+depends=('glibc')
+makedepends=('gcc' 'make' 'git')
+provides=('sakura-lslc')
+conflicts=('sakura-lslc')
+source=("$_pkgname::git+https://github.com/Sakura-Studios-IKE/sakura-lslc.git")
+sha256sums=('SKIP')
+
+pkgver() {
+    cd "$srcdir/$_pkgname"
+    git describe --long --tags 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' \
+        || printf "0.0.0.r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+    cd "$srcdir/$_pkgname"
+    make
+}
+
+package() {
+    cd "$srcdir/$_pkgname"
+    make PREFIX=/usr DESTDIR="$pkgdir" install
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

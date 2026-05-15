@@ -1,0 +1,39 @@
+# Build artefacts
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.exe
+/lslc
+/lslc.exe
+src/*.o
+src/*.obj
+
+# CMake out-of-source builds
+/build/
+/build-*/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+
+# IDE / editor metadata
+.idea/
+.vs/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local test scratch / temp output
+/tmp/
+*.log
+*.tmp
+
+# Diagnostics output if -o was used
+diagnostics.txt

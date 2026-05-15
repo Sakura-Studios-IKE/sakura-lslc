@@ -125,15 +125,27 @@ sakura-lslc/
 
 ## Status
 
-`sakura-lslc` is the first half of a two-project toolchain:
+`sakura-lslc` is the compiler in Sakura Studios' five-tool open-source
+LSL toolchain:
 
 1. **`sakura-lslc`** — this compiler. Catches every error the in-viewer
-   uploader would, plus many it wouldn't.
-2. **`sakura-lsl-sim`** *(future)* — a headless region emulator that
-   walks the typed AST, models the event loop, mocks `ll*` side
-   effects, and routes `llMessageLinked` / `llRegionSay` /
-   `llListen` across scripts so you can integration-test entire
-   LSL systems without launching SL.
+   uploader would, plus many it doesn't. Emits portable `.lslbc` bytecode.
+2. [**`sakura-slemu`**](https://github.com/ShihoSakura/sakura-slemu) —
+   headless region emulator that walks the typed AST, models the event
+   loop, mocks `ll*` side effects, and routes
+   `llMessageLinked` / `llRegionSay` / `llListen` across scripts.
+3. [**`sakura-lsldb`**](https://github.com/ShihoSakura/sakura-lsldb) —
+   gdb-style CLI debugger for `.lsl` and `.lslbc` (source breakpoints,
+   step, print, catchpoints).
+4. [**`sakura-lsltest`**](https://github.com/ShihoSakura/sakura-lsltest)
+   — pytest-style test framework that drives `lslc` + `slemu` for
+   automated LSL testing.
+5. [**`sakura-intellij-lsl`**](https://github.com/ShihoSakura/sakura-intellij-lsl)
+   — IntelliJ plugin: syntax / completion / inspections / run-in-emulator
+   / hot-reload to Firestorm.
+
+This repository's test status: 30/30 acceptance tests + 82/82 language-coverage
+tests, all green on every supported platform.
 
 ## Author / Attribution
 

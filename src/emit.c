@@ -17,15 +17,20 @@
  *
  *   functions
  *     u32     n_funcs
- *     repeat: u32 name_idx, u8 ret_type, u8 has_return_type,
+ *     repeat: u32 name_idx, u32 line_no, u8 ret_type, u8 has_return_type,
  *             u8 n_params, n_params*(u8 type, u32 name_idx), stmt body
  *
  *   states
  *     u32     n_states
- *     repeat: u32 name_idx, u8 is_default,
+ *     repeat: u32 name_idx, u32 line_no, u8 is_default,
  *             u32 n_events,
- *             n_events * (u32 name_idx, u8 n_params,
+ *             n_events * (u32 name_idx, u32 line_no, u8 n_params,
  *                         n_params*(u8 type, u32 name_idx), stmt body)
+ *
+ *   stmt:
+ *     u8 tag
+ *     u32 line_no            (0 if unknown; new in SLBC v2)
+ *     payload...
  *
  *   Expression / Statement nodes are tagged trees. Tags use the existing
  *   ExprKind / StmtKind enum values verbatim — see lsl.h. Layout:
@@ -222,6 +227,7 @@ static void emit_expr(Emit *e, Expr *x) {
 static void emit_stmt(Emit *e, Stmt *s) {
     if (!s) { w_u8(e, 0xFF); return; }
     w_u8(e, (uint8_t)s->kind);
+    w_u32(e, (uint32_t)(s->loc.line > 0 ? s->loc.line : 0));
     switch (s->kind) {
         case S_EMPTY: break;
         case S_EXPR: emit_expr(e, s->u.expr); break;
@@ -307,7 +313,7 @@ int emit_bytecode(ScriptAST *ast, const char *out_path, int lso, DiagCtx *diag) 
 
     /* Header */
     w_bytes(&e, "SLBC\0", 5);
-    w_u32(&e, 1);                            /* version */
+    w_u32(&e, 2);                            /* version (2 adds line numbers) */
     w_u32(&e, lso ? 1u : 0u);                /* flags */
 
     /* String pool */
@@ -333,6 +339,7 @@ int emit_bytecode(ScriptAST *ast, const char *out_path, int lso, DiagCtx *diag) 
     for (int i = 0; i < ast->n_funcs; i++) {
         FuncDecl *f = &ast->funcs[i];
         w_str_idx(&e, f->name ? f->name : "");
+        w_u32(&e, (uint32_t)(f->loc.line > 0 ? f->loc.line : 0));
         w_u8(&e, (uint8_t)f->ret);
         w_u8(&e, (uint8_t)f->has_return_type);
         w_u8(&e, (uint8_t)f->n_params);
@@ -348,11 +355,13 @@ int emit_bytecode(ScriptAST *ast, const char *out_path, int lso, DiagCtx *diag) 
     for (int i = 0; i < ast->n_states; i++) {
         StateDecl *st = &ast->states[i];
         w_str_idx(&e, st->name ? st->name : "");
+        w_u32(&e, (uint32_t)(st->loc.line > 0 ? st->loc.line : 0));
         w_u8(&e, (uint8_t)st->is_default);
         w_u32(&e, (uint32_t)st->n_events);
         for (int j = 0; j < st->n_events; j++) {
             EventDecl *ev = &st->events[j];
             w_str_idx(&e, ev->name ? ev->name : "");
+            w_u32(&e, (uint32_t)(ev->loc.line > 0 ? ev->loc.line : 0));
             w_u8(&e, (uint8_t)ev->n_params);
             for (int k = 0; k < ev->n_params; k++) {
                 w_u8(&e, (uint8_t)ev->params[k].type);

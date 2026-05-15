@@ -27,7 +27,7 @@ jobs:
           msystem: MINGW64
           install: >-
             mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-make
+            make
 
       - name: Build (POSIX)
         if: runner.os != 'Windows'

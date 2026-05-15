@@ -64,6 +64,50 @@ static void list_builtins(void) {
     for (int i = 0; i < BI_EVENT_N; i++) printf("%s\n", BI_EVENT[i].name);
 }
 
+/* Detailed JSON-line dump for IDE tooling. One line per built-in,
+ * one line per constant, one line per event. Format:
+ *   {"k":"fn","name":"llSay","ret":"void","params":["integer","string"],"flags":0}
+ *   {"k":"const","name":"TRUE","type":"integer","value":"1"}
+ *   {"k":"event","name":"touch_start","params":[{"type":"integer","name":"n"}]}
+ * Field order is stable so consumers can parse line-by-line. */
+static void list_builtins_detailed(void) {
+    for (int i = 0; i < BI_FN_N; i++) {
+        const BuiltinFn *f = &BI_FN[i];
+        printf("{\"k\":\"fn\",\"name\":\"%s\",\"ret\":\"%s\",\"params\":[",
+               f->name, type_name(f->ret));
+        for (int p = 0; p < f->n_params; p++) {
+            printf("%s\"%s\"", p ? "," : "", type_name(f->params[p]));
+        }
+        printf("],\"flags\":%u}\n", f->flags);
+    }
+    for (int i = 0; i < BI_CONST_N; i++) {
+        const BuiltinConst *c = &BI_CONST[i];
+        printf("{\"k\":\"const\",\"name\":\"%s\",\"type\":\"%s\",\"value\":\"",
+               c->name, type_name(c->type));
+        if (c->type == T_INTEGER) printf("%lld", c->ival);
+        else if (c->type == T_FLOAT) printf("%g", c->fval);
+        else if (c->sval) {
+            for (const char *p = c->sval; *p; p++) {
+                if (*p == '"' || *p == '\\') putchar('\\');
+                if ((unsigned char)*p < 0x20) printf("\\u%04x", (unsigned char)*p);
+                else putchar(*p);
+            }
+        }
+        printf("\"}\n");
+    }
+    for (int i = 0; i < BI_EVENT_N; i++) {
+        const BuiltinEvent *e = &BI_EVENT[i];
+        printf("{\"k\":\"event\",\"name\":\"%s\",\"params\":[", e->name);
+        for (int p = 0; p < e->n_params; p++) {
+            printf("%s{\"type\":\"%s\",\"name\":\"%s\"}",
+                   p ? "," : "",
+                   type_name(e->params[p]),
+                   e->param_names[p] ? e->param_names[p] : "");
+        }
+        printf("]}\n");
+    }
+}
+
 typedef struct {
     int wall, werror, quiet, color, max_errors;
     LslTarget target;
@@ -249,6 +293,7 @@ int main(int argc, char **argv) {
         if (!strcmp(a, "-h") || !strcmp(a, "--help")) { show_help(argv[0]); return 0; }
         if (!strcmp(a, "--version")) { printf("lslc %s\n", LSLC_VERSION); return 0; }
         if (!strcmp(a, "--list-builtins")) { list_builtins(); return 0; }
+        if (!strcmp(a, "--list-builtins-detailed")) { list_builtins_detailed(); return 0; }
         if (!strcmp(a, "-W") || !strcmp(a, "--wall") || !strcmp(a, "-Wall")) { opts.wall = 1; i++; continue; }
         if (!strcmp(a, "-Werror")) { opts.werror = 1; i++; continue; }
         if (!strcmp(a, "-fsyntax-only")) { i++; continue; }

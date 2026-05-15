@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+
+      - name: Build (POSIX)
+        if: runner.os != 'Windows'
+        run: make CC=cc
+
+      - name: Build (Windows MinGW)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: make CC=gcc
+
+      - name: Acceptance tests
+        if: runner.os != 'Windows'
+        run: make test
+
+      - name: Coverage suite
+        if: runner.os != 'Windows'
+        run: sh tests/coverage/run_coverage.sh
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: lslc-${{ matrix.os }}
+          path: |
+            lslc
+            lslc.exe
+          if-no-files-found: ignore
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          # Slurp the lines for this exact section.
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[" v "\\]" {flag=1; next}
+            flag && /^## \[/ {flag=0}
+            flag
+          ' CHANGELOG.md > release-body.md
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: sakura-lslc ${{ steps.changelog.outputs.version }}
+          body_path: release-body.md
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/lslc-ubuntu-latest/lslc
+            artifacts/lslc-macos-latest/lslc
+            artifacts/lslc-windows-latest/lslc.exe
+
+  publish-aur:
+    name: Push AUR PKGBUILD
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Requires the AUR_SSH_KEY repo secret to be set; if absent the
+      # action's exec step exits cleanly without pushing.
+      - name: Push to AUR (sakura-lslc)
+        continue-on-error: true
+        uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
+        with:
+          pkgname: sakura-lslc
+          pkgbuild: packaging/aur/sakura-lslc/PKGBUILD
+          commit_username: Shiho Sakura
+          commit_email: shiho@sakurastudios.eu
+          ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
+          commit_message: "v${{ github.ref_name }}"

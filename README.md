@@ -1,5 +1,9 @@
 # sakura-lslc
 
+[![CI](https://github.com/Sakura-Studios-IKE/sakura-lslc/actions/workflows/ci.yml/badge.svg)](https://github.com/Sakura-Studios-IKE/sakura-lslc/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/Sakura-Studios-IKE/sakura-lslc)](https://github.com/Sakura-Studios-IKE/sakura-lslc/releases)
+
 **An offline LSL Mono / LSO compiler in pure C99 — by Sakura Studios, IKE.**
 
 `sakura-lslc` (binary: `lslc`) is a from-scratch Second Life / OpenSim
@@ -66,9 +70,27 @@ cmake --build build
 Optional:
 
 ```sh
-sudo make install            # to /usr/local/bin
+sudo make install            # to /usr/local/bin + man page to share/man/man1
 make test                    # run the in-tree regression suite (30 cases)
 ```
+
+## Install
+
+### Arch Linux (AUR)
+
+```sh
+yay -S sakura-lslc            # latest tagged release
+yay -S sakura-lslc-git        # follow main
+```
+
+See [`packaging/aur/README.md`](./packaging/aur/README.md) for the
+PKGBUILDs and submission notes.
+
+### Pre-built binaries
+
+Every tagged release publishes Linux / macOS / Windows binaries on the
+[GitHub Releases](https://github.com/Sakura-Studios-IKE/sakura-lslc/releases)
+page. After installing, `man lslc` shows the full reference.
 
 ## Use
 

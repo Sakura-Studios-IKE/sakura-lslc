@@ -438,6 +438,14 @@ void preproc_define_cli(Preproc *p, const char *spec);  /* "NAME" or "NAME=val" 
  * set. Returns NULL on hard I/O failure. */
 char *preproc_run(Preproc *p, const char *path, size_t *out_len);
 
+/* ----------------------------- Bytecode --------------------------------- */
+/*
+ * After semantic analysis succeeds, write the typed AST out as a compact
+ * binary file (the SLBC format). Returns non-zero on success. Used by
+ * the slemu runtime as input. See emit.c for the file layout.
+ */
+int emit_bytecode(ScriptAST *ast, const char *out_path, int lso, DiagCtx *diag);
+
 /* --------------------------------- Util --------------------------------- */
 
 void *xmalloc(size_t n);

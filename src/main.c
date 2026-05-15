@@ -38,8 +38,12 @@ static void show_help(const char *prog) {
 "  -E                       Print the preprocessed source and exit\n"
 "  --no-preprocess          Skip the preprocessor entirely\n"
 "\n"
+"Output:\n"
+"  -c, --emit-bytecode      Emit SLBC bytecode (.lslbc) for sakura-slemu\n"
+"  -o, --output FILE        With -c, output path (default: <input>.lslbc)\n"
+"  --diag-output FILE       Redirect diagnostics to FILE (default: stderr)\n"
+"\n"
 "Other:\n"
-"  -o, --output FILE        Output path for diagnostics (default: stderr)\n"
 "  --list-builtins          Print all built-in function/constant/event names\n"
 "      --version            Print version and exit\n"
 "  -h, --help               Show this help message\n"
@@ -70,6 +74,8 @@ typedef struct {
     char **include_paths;
     int n_defines;
     char **defines;
+    int emit_bytecode;      /* -c / --emit-bytecode */
+    const char *out_path;   /* -o, when emitting bytecode */
 } CliOpts;
 
 /* Rough script-bytecode estimate: source size minus comments and
@@ -186,14 +192,38 @@ static int compile_file(const char *path, const CliOpts *opts) {
                 d.warnings, d.warnings == 1 ? "" : "s");
         rc = 1;
     } else {
-        if (d.warnings > 0 && !opts->quiet) {
-            fprintf(stderr,
-                "%s: OK (%d warning%s)\n", path,
-                d.warnings, d.warnings == 1 ? "" : "s");
-        } else if (!opts->quiet) {
-            fprintf(stderr, "%s: OK\n", path);
+        if (opts->emit_bytecode) {
+            char default_out[1024];
+            const char *bc_out = opts->out_path;
+            if (!bc_out) {
+                size_t pl = strlen(path);
+                /* strip the trailing .lsl / .lsl.txt to get the stem */
+                const char *dot = strrchr(path, '.');
+                if (dot && (!strcmp(dot, ".lsl") || !strcmp(dot, ".txt"))) pl = (size_t)(dot - path);
+                if (pl + 7 < sizeof default_out) {
+                    memcpy(default_out, path, pl);
+                    memcpy(default_out + pl, ".lslbc", 7);
+                    bc_out = default_out;
+                } else {
+                    bc_out = "out.lslbc";
+                }
+            }
+            if (!emit_bytecode(&ast, bc_out, opts->target == LSL_LSO, &d)) {
+                rc = 1;
+            } else {
+                if (!opts->quiet) fprintf(stderr, "%s -> %s\n", path, bc_out);
+                rc = 0;
+            }
+        } else {
+            if (d.warnings > 0 && !opts->quiet) {
+                fprintf(stderr,
+                    "%s: OK (%d warning%s)\n", path,
+                    d.warnings, d.warnings == 1 ? "" : "s");
+            } else if (!opts->quiet) {
+                fprintf(stderr, "%s: OK\n", path);
+            }
+            rc = 0;
         }
-        rc = 0;
     }
 
     ast_free_script(&ast);
@@ -249,8 +279,16 @@ int main(int argc, char **argv) {
             opts.defines[opts.n_defines++] = xstrdup(val);
             i++; continue;
         }
+        if (!strcmp(a, "-c") || !strcmp(a, "--emit-bytecode")) {
+            opts.emit_bytecode = 1; i++; continue;
+        }
         if (!strcmp(a, "-o") || !strcmp(a, "--output")) {
             if (i + 1 >= argc) { fprintf(stderr, "lslc: option %s requires a path\n", a); return 2; }
+            opts.out_path = argv[i+1];
+            i += 2; continue;
+        }
+        if (!strcmp(a, "--diag-output")) {
+            if (i + 1 >= argc) { fprintf(stderr, "lslc: --diag-output requires a path\n"); return 2; }
             if (!freopen(argv[i+1], "w", stderr)) {
                 fprintf(stdout, "lslc: cannot write to %s\n", argv[i+1]); return 2;
             }

@@ -22,6 +22,7 @@
 #define FN5(name, ret, a, b, c, d, e) { name, ret, 5, {a, b, c, d, e}, 0 }
 #define FN6(name, ret, a, b, c, d, e, f) { name, ret, 6, {a, b, c, d, e, f}, 0 }
 #define FN7(name, ret, a, b, c, d, e, f, g) { name, ret, 7, {a, b, c, d, e, f, g}, 0 }
+#define FN8(name, ret, a, b, c, d, e, f, g, h) { name, ret, 8, {a, b, c, d, e, f, g, h}, 0 }
 
 /* Mono-only variants — set BFN_MONO_ONLY in flags. Used by --lso mode. */
 #define MN0(name, ret) { name, ret, 0, {0}, BFN_MONO_ONLY }
@@ -652,6 +653,23 @@ const BuiltinFn BI_FN[] = {
     FN1("llRemoveFromLandBanList",    T_VOID, T_KEY),
     FN1("llLinksetDataDeleteKey",     T_INTEGER, T_STRING),
     FN3("llMapDestination",           T_VOID, T_STRING, T_VECTOR, T_VECTOR),
+
+    /* --------- Wiki sync additions (auto) ---------- */
+    FN1("llRequestInventoryData", T_KEY, T_STRING),
+    FN1("llSetLocalRot", T_VOID, T_ROTATION),
+    FN1("llRemoveVehicleFlags", T_VOID, T_INTEGER),
+    FN2("llRequestAnimationData", T_KEY, T_KEY, T_INTEGER),
+    FN1("llSetVehicleFlags", T_VOID, T_INTEGER),
+    FN2("llClearLinkMedia", T_INTEGER, T_INTEGER, T_INTEGER),
+    FN1("llGetSimStats", T_FLOAT, T_INTEGER),
+    FN1("llLinksetDataCountFound", T_INTEGER, T_STRING),
+    FN0("llRefreshPrimURL", T_VOID),
+    FN8("llSetLinkTextureAnim", T_VOID, T_INTEGER, T_INTEGER, T_INTEGER, T_INTEGER, T_INTEGER, T_FLOAT, T_FLOAT, T_FLOAT),
+    FN3("llCollisionFilter", T_VOID, T_STRING, T_KEY, T_INTEGER),
+    FN0("llGetMassMKS", T_FLOAT),
+    FN2("llGetNotecardLineSync", T_STRING, T_STRING, T_INTEGER),
+    FN0("llGetObjectVelocity", T_VECTOR),
+    FN0("llGetPayPrice", T_LIST),
 };
 const int BI_FN_N = (int)(sizeof BI_FN / sizeof BI_FN[0]);
 
@@ -1304,7 +1322,8 @@ const BuiltinEvent BI_EVENT[] = {
     EV3("final_damage",       T_INTEGER, "num_source", T_KEY, "victim", T_FLOAT, "damage"),
     EV3("on_damage",          T_INTEGER, "num_source", T_KEY, "id", T_FLOAT, "damage"),
     EV2("on_death",           T_KEY, "id", T_KEY, "killer"),
-    EV2("game_control",       T_KEY, "id", T_INTEGER, "level")
+    EV2("game_control",       T_KEY, "id", T_INTEGER, "level"),
+    EV3("control", T_KEY, "id", T_INTEGER, "level", T_INTEGER, "edge")
 };
 const int BI_EVENT_N = (int)(sizeof BI_EVENT / sizeof BI_EVENT[0]);
 

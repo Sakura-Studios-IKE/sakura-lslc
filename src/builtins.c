@@ -292,6 +292,7 @@ const BuiltinFn BI_FN[] = {
     FN1("llGetLinkName",        T_STRING, T_INTEGER),
     FN0("llGetNumberOfPrims",   T_INTEGER),
     FN1("llGetLinkKey",         T_KEY, T_INTEGER),
+    FN4("llMessageLinked",      T_VOID, T_INTEGER, T_INTEGER, T_STRING, T_KEY),
     FN2("llSetLinkAlpha",       T_VOID, T_INTEGER, T_FLOAT),
     FN3("llSetLinkAlpha",       T_VOID, T_INTEGER, T_FLOAT, T_INTEGER),
     FN3("llSetLinkColor",       T_VOID, T_INTEGER, T_VECTOR, T_INTEGER),
@@ -640,6 +641,17 @@ const BuiltinFn BI_FN[] = {
     /* --------- Misc utilities & sentinel ---------- */
     FN0("llGetNotecardLineSync", T_STRING),
     FN1("print",                T_VOID, T_ANY),  /* debug-only */
+
+    /* --------- LSL builtins exercised by curriculum solutions ---------- */
+    FN0("llGenerateKey",              T_KEY),
+    FN3("llTakeControls",             T_VOID, T_INTEGER, T_INTEGER, T_INTEGER),
+    FN0("llReleaseControls",          T_VOID),
+    FN2("llAddToLandPassList",        T_VOID, T_KEY, T_FLOAT),
+    FN1("llRemoveFromLandPassList",   T_VOID, T_KEY),
+    FN2("llAddToLandBanList",         T_VOID, T_KEY, T_FLOAT),
+    FN1("llRemoveFromLandBanList",    T_VOID, T_KEY),
+    FN1("llLinksetDataDeleteKey",     T_INTEGER, T_STRING),
+    FN3("llMapDestination",           T_VOID, T_STRING, T_VECTOR, T_VECTOR),
 };
 const int BI_FN_N = (int)(sizeof BI_FN / sizeof BI_FN[0]);
 
